@@ -247,7 +247,8 @@ HistFit::HistFit(std::string run_id) :
     ApplyCutoffLow(fCutoffLow,"exp");
     fExpBinNum = fExpHist->GetNbinsX();
     
-    std::string name = "../G4_RAW/Sim" + fRunId + ".root";
+    //std::string name = "../G4_RAW/Sim" + fRunId + ".root";
+    std::string name = "../G4_RAW/" + title + ".root";
     fSimFile = TFile::Open(name.c_str());     
 
     fSimTree = (TTree*)(fSimFile->Get("ntuple/ntuple")); 
