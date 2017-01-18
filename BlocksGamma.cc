@@ -225,13 +225,19 @@ HistFit::HistFit(std::string run_id) :
     fPtypeVector(NULL)
 {
 
-    fCutoffHigh = 80.;
-    fCutoffLow = 3.0;
+    //fCutoffHigh = 80.;
+    //fCutoffLow = 3.0;
+    
+    std::string title;
+    if(run_id=="0_2"||run_id=="3_1"||run_id=="0_3"||run_id=="3_2") { fCutoffHigh = 3000.; fCutoffLow = 100.; title="24Na";} 
+    else if(run_id=="0_4"||run_id=="3_3") { fCutoffHigh = 1500; fCutoffLow = 50; title="60Co";} 
+    else if(run_id=="0_0"||run_id=="1_0"||run_id=="3_0") { fCutoffHigh = 700; fCutoffLow = 70; title="137Cs";} 
+    else if(run_id=="0_1"||run_id=="1_1"||run_id=="2_0"||run_id=="1_2"||run_id=="2_1") { fCutoffHigh = 80.; fCutoffLow = 3.; title="241Am";} 
+    else{ std::cout << "not a valid run id, this is a garbage object!!!" << std::endl; return; }
  
     fExpFile = TFile::Open("~/data/hists2012.root"); 
 
     std::string hist_name = "ProtonCalibratedSource" + fRunId;
-    std::string title = fRunId;
     fExpHist = (TH1F*)(fExpFile->Get(hist_name.c_str())->Clone());
     fExpHist->SetNameTitle(hist_name.c_str(),title.c_str());
     fExpHist->SetLineColor(kBlack);
