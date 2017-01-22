@@ -234,7 +234,8 @@ HistFit::HistFit(std::string run_id) :
     else if(run_id=="0_0"||run_id=="1_0"||run_id=="3_0") { fCutoffHigh = 700; fCutoffLow = 70; title="137Cs";} 
     else if(run_id=="0_1"||run_id=="1_1"||run_id=="2_0"||run_id=="1_2"||run_id=="2_1") { fCutoffHigh = 80.; fCutoffLow = 3.; title="241Am";} 
     else{ std::cout << "not a valid run id, this is a garbage object!!!" << std::endl; return; }
- 
+    fCutoffLow = 200.; 
+
     fExpFile = TFile::Open("~/data/hists2012.root"); 
 
     std::string hist_name = "ProtonCalibratedSource" + fRunId;
@@ -280,9 +281,10 @@ HistFit::HistFit(std::string run_id) :
    
     fLightOffset = 0.0;
 
-    std::cout << "Run# = " << fRunId << std::endl;
+    std::cout << "Source: " << title << " - " << fRunId << std::endl;
 
     //if(fExpBinNum == 50100) fExpHist->Rebin(10);
+    fExpHist->Rebin(5);
 }
 
 HistFit::~HistFit() {}

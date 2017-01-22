@@ -5,6 +5,10 @@
     ProtonCalibratedSource1_0->SetLineColor(2);
     ProtonCalibratedSource3_0->SetLineColor(3);
 
+    ProtonCalibratedSource0_0->Rebin(10);
+    ProtonCalibratedSource1_0->Rebin(10);
+    ProtonCalibratedSource3_0->Rebin(10);
+    
     ProtonCalibratedSource0_0->Draw();
     ProtonCalibratedSource1_0->Draw("same");
     ProtonCalibratedSource3_0->Draw("same");
