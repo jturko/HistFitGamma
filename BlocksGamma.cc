@@ -94,6 +94,77 @@ private:
     double fArray[3];
 };
 
+class vec4 
+{
+public:
+    vec4() { 
+        set(0,0,0,0); 
+    }
+    ~vec4() {} 
+    
+    vec4(double e1, double e2, double e3, double e4) {
+        set(e1,e2,e3,e4);
+    }
+
+    double at(int i) { 
+        if(i<0||i>=int(fVector.size())) { 
+            std::cout << "out of range!" << std::endl;
+            return 0.;
+        }
+        else return fVector.at(i); 
+    }
+
+    int size() { return fVector.size(); }
+ 
+    void set(double e1, double e2, double e3, double e4) {
+        fVector.resize(0);
+        fVector.push_back(e1); fArray[0] = e1;
+        fVector.push_back(e2); fArray[1] = e2;
+        fVector.push_back(e3); fArray[2] = e3;
+        fVector.push_back(e4); fArray[3] = e4;
+    }
+    void set(int i, double val) { 
+        if(i<0||i>=int(fVector.size())) { 
+            std::cout << "out of range!" << std::endl;
+            return;
+        }
+        fVector.at(i) = val; fArray[i] = val;
+    }
+    
+    void add(vec4 v) { 
+        if(v.size() != int(fVector.size())) { std::cout << "error, different vector sizes" << std::endl; return; }
+        for(int i=0; i<int(fVector.size()); i++) fVector.at(i) = fVector.at(i) + v.at(i);   
+    }
+    void subtract(vec4 v) { 
+        if(v.size() != int(fVector.size())) { std::cout << "error, different vector sizes" << std::endl; return; }
+        for(int i=0; i<int(fVector.size()); i++) fVector.at(i) = fVector.at(i) - v.at(i);   
+    }
+    
+    vec4 scalar_multiply(double num) {
+        vec4 return_vec;
+        for(int i=0; i<int(fVector.size()); i++) return_vec.set(i,num*fVector.at(i));
+        return return_vec;
+    }
+    
+    vec4 midpoint(vec4 v) { 
+        vec4 return_vec;
+        if(v.size() != int(fVector.size())) {
+            std::cout << "error, different vector sizes" << std::endl;
+            return return_vec;
+        }
+        for(int i=0; i<int(fVector.size()); i++) { return_vec.set(i,0.5*(fVector.at(i) + v.at(i))); }
+        return return_vec;
+    }
+    
+    double * par_array() {
+        return fArray;
+    }
+
+private:
+    std::vector<double> fVector;
+    double fArray[4];
+};
+
 /////////////////////////////////////////////////////////////////////////////////////
 
 class HistFit 
@@ -204,6 +275,7 @@ public:
     TRandom3 fRandom;
 
     double fLightOffset;
+    double fStretch;
 
     double fChi2;
     int fExpBinNum;
@@ -234,7 +306,7 @@ HistFit::HistFit(std::string run_id) :
     else if(run_id=="0_0"||run_id=="1_0"||run_id=="3_0") { fCutoffHigh = 700; fCutoffLow = 70; title="137Cs";} 
     else if(run_id=="0_1"||run_id=="1_1"||run_id=="2_0"||run_id=="1_2"||run_id=="2_1") { fCutoffHigh = 80.; fCutoffLow = 3.; title="241Am";} 
     else{ std::cout << "not a valid run id, this is a garbage object!!!" << std::endl; return; }
-    fCutoffLow = 200.; 
+    fCutoffLow = 400.; 
 
     fExpFile = TFile::Open("~/data/hists2012.root"); 
 
@@ -280,6 +352,7 @@ HistFit::HistFit(std::string run_id) :
     SetParameters(fParameters);
    
     fLightOffset = 0.0;
+    fStretch = 1.;
 
     std::cout << "Source: " << title << " - " << fRunId << std::endl;
 
@@ -294,7 +367,8 @@ void HistFit::SetParameters(double * par)
     fSmearingCoeff[0] = par[0];
     fSmearingCoeff[1] = par[1];
     fSmearingCoeff[2] = par[2];
-    fProtonCoeff[0] = par[3];
+    fStretch = par[3];
+    //fProtonCoeff[0] = par[3];
     fProtonCoeff[1] = par[4];
     fProtonCoeff[2] = par[5];
     fProtonCoeff[3] = par[6];
@@ -304,7 +378,7 @@ void HistFit::SetParameters(double * par)
     fParameters[0] = par[0];
     fParameters[1] = par[1];
     fParameters[2] = par[2];
-    fParameters[3] = par[3];
+    fParameters[3] = par[3]; // this parameter is now being used to get a stretch factor (gamma fit only) 
     fParameters[4] = par[4];
     fParameters[5] = par[5];
     fParameters[6] = par[6];
@@ -397,7 +471,8 @@ void HistFit::Sort(double * par)
                 light -= 1000.*fRandom.Gaus(centroidEres, Resolution(centroidEres,fSmearingCoeff));
             } 
         }//end scatters loop       
-        if(light>0.) fSimHist->Fill(light+fLightOffset);
+        if(light>0.) fSimHist->Fill(light*fStretch);
+        //if(light>0.) fSimHist->Fill(light+fLightOffset);
         //if(light>0.) fSimHist->Fill(light);
     }//end event loop
 
@@ -425,7 +500,7 @@ public:
     Fitter(std::string, std::string, std::string, std::string, std::string, std::string, std::string, std::string);
     
     void Draw();
-    void Run(double A=0.10, double B=0.05, double C=1e-4, double offset = 0);
+    void Run(double A=0.10, double B=0.05, double C=1e-4, double stretch=1, double offset = 0);
 
     bool Check(int i) { if(i<=-1||i>=GetNumberOfHistFits()) return false; else return true; }
     
@@ -491,6 +566,7 @@ public:
     void InitializeParameters();
 
     void NelderMead3(double A=0.10, double B=0.05, double C=0.0001, int itermax=50);
+    void NelderMead4(double A=0.10, double B=0.05, double C=0.0001, double stretch=1., int itermax=50);
 
     std::vector<HistFit> fHistFitVector;   
     std::vector<std::string> fRunIdVector;
@@ -518,6 +594,11 @@ public:
         return DoChi2();
     }
     double nm_val(vec v) {
+        SetParameters(v.par_array());
+        SortAllRuns();
+        return DoChi2();
+    }
+    double nm_val(vec4 v) {
         SetParameters(v.par_array());
         SortAllRuns();
         return DoChi2();
@@ -629,16 +710,15 @@ Fitter::Fitter(std::string one, std::string two, std::string three, std::string 
     InitializeParameters();
 }
 
-void Fitter::Run(double A, double B, double C, double offset) 
+void Fitter::Run(double A, double B, double C, double stretch, double offset) 
 {
-    double a1 = fParameters[3];
     double a2 = fParameters[4];
     double a3 = fParameters[5];
     double a4 = fParameters[6];
     double carbon = fParameters[7];
     offset = fParameters[8];
     
-    SetParameters(A,B,C,a1,a2,a3,a4,carbon,offset);
+    SetParameters(A,B,C,stretch,a2,a3,a4,carbon,offset);
     PrintParameters();
     if(!fCanvas) {
         fCanvas = new TCanvas();
@@ -712,6 +792,15 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
     nmvec.push_back(v3);
     nmvec.push_back(v4);
 
+    for(int i=0; i<3; i++) std::cout << nmvec.at(0).at(i) << " ";
+    std::cout << std::endl;
+    for(int i=0; i<3; i++) std::cout << nmvec.at(1).at(i) << " ";
+    std::cout << std::endl;
+    for(int i=0; i<3; i++) std::cout << nmvec.at(2).at(i) << " ";
+    std::cout << std::endl;
+    for(int i=0; i<3; i++) std::cout << nmvec.at(3).at(i) << " ";
+    std::cout << std::endl;
+
     std::cout << "calculating chi2's for the initial simplex..." << std::endl;
     std::vector<double> chi2vec;
     for(int i=0; i<int(nmvec.size()); i++) {
@@ -720,7 +809,16 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
         SortAllRuns();
         chi2vec.push_back(DoChi2());
     } 
-        
+     
+    for(int i=0; i<3; i++) std::cout << nmvec.at(0).at(i) << " ";
+    std::cout << std::endl;
+    for(int i=0; i<3; i++) std::cout << nmvec.at(1).at(i) << " ";
+    std::cout << std::endl;
+    for(int i=0; i<3; i++) std::cout << nmvec.at(2).at(i) << " ";
+    std::cout << std::endl;
+    for(int i=0; i<3; i++) std::cout << nmvec.at(3).at(i) << " ";
+    std::cout << std::endl;
+   
     std::cout << "starting the Nelder-Mead iterations..." << std::endl;
     //////////////////////////////////////////////////////////////////
     for(int iter=1; iter<=itermax; iter++) {
@@ -802,6 +900,130 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
         nmvec.at(0) = B; chi2vec.at(0) = B_chi2;
         nmvec.at(1) = G; chi2vec.at(1) = G_chi2;
         nmvec.at(3) = W; chi2vec.at(3) = W_chi2;
+    
+        std::cout << std::endl << "finished iteration # " << iter << "/" << itermax << std::endl << std::endl;
+        
+        // end of logical loop
+    }
+    //////////////////////////////////////////////////////////////////
+}
+
+
+void Fitter::NelderMead4(double A, double B, double C, double stretch, int itermax)
+{
+    std::cout << "starting Nelder Mead method... " << std::endl;
+    std::cout << "!!! only fitting the 3 Gaussian parameters : A, B, C" << std::endl;
+    
+    
+    double inc2 = 0.05;   // A
+    double inc3 = 0.05;  // B
+    double inc4 = 1e-3; // C
+    double inc5 = 0.05;
+
+    //    ( A   , B    , C     , a1   , a2  , a3  , a4   , carbon)
+    vec4 v1(A,B,C,stretch);
+    vec4 v2(v1); v2.set(0,v2.at(0)+inc2);
+    vec4 v3(v1); v3.set(1,v3.at(1)+inc3);
+    vec4 v4(v1); v4.set(2,v4.at(2)+inc4);
+    vec4 v5(v1); v5.set(3,v4.at(3)+inc5);
+
+    std::vector<vec4> nmvec;
+    nmvec.push_back(v1);
+    nmvec.push_back(v2);
+    nmvec.push_back(v3);
+    nmvec.push_back(v4);
+    nmvec.push_back(v5);
+
+    std::cout << "calculating chi2's for the initial simplex..." << std::endl;
+    std::vector<double> chi2vec;
+    for(int i=0; i<int(nmvec.size()); i++) {
+        std::cout << "simplex " << i+1 << std::endl;
+        SetParameters(nmvec.at(i).par_array());         
+        SortAllRuns();
+        chi2vec.push_back(DoChi2());
+    } 
+        
+    std::cout << "starting the Nelder-Mead iterations..." << std::endl;
+    //////////////////////////////////////////////////////////////////
+    for(int iter=1; iter<=itermax; iter++) {
+
+        std::vector<vec4> temp_par;
+        std::vector<double> temp_chi2;
+        temp_par.resize(5);
+        temp_chi2.resize(5);
+
+        // reordering...
+        double test = 1e100;
+        int val = 0;
+        for(int i=0; i<5; i++) {
+            for(int j=0; j<5; j++) {
+                if(chi2vec.at(j) < test) {
+                    test = chi2vec.at(j);
+                    temp_chi2.at(i) = test;
+                    temp_par.at(i) = nmvec.at(j);
+                    val = j;
+                }
+            }
+            chi2vec.at(val) = 1e100;
+            test = 1e100;
+        }
+        nmvec = temp_par;
+        chi2vec = temp_chi2;
+
+        std::cout << "printing the reordered variables..." << std::endl;
+        for(int i=0; i<5; i++) {
+            std::cout << " chi2 = " << chi2vec.at(i);
+            std::cout << " pars = ";
+            for(int j=0; j<3; j++) std::cout << nmvec.at(i).at(j) << " , "; std::cout << nmvec.at(i).at(3);
+            std::cout << std::endl;
+        }
+        
+    
+        vec4 B(nmvec.at(0)); double B_chi2 = chi2vec.at(0);
+        vec4 G(nmvec.at(1)); double G_chi2 = chi2vec.at(1);
+        vec4 W(nmvec.at(4)); double W_chi2 = chi2vec.at(4);
+        vec4 M = B.midpoint(G); double M_chi2 = nm_val(M);
+        vec4 R = M.scalar_multiply(2.); R.subtract(W); double R_chi2 = nm_val(R);
+        vec4 E = R.scalar_multiply(2.); E.subtract(M); double E_chi2 = 0;
+        vec4 C; double C_chi2 = 0;        
+        vec4 S; double S_chi2 = 0;    
+
+        // now with the logical decisions....
+        if(R_chi2 < G_chi2) {  // case 1
+            if(B_chi2 < R_chi2) {
+                W = R; W_chi2 = R_chi2;
+            }
+            else {
+                E_chi2 = nm_val(E);
+                if(E_chi2 < B_chi2) {
+                    W = E; W_chi2 = E_chi2;   
+                }
+                else {
+                    W = R; W_chi2 = R_chi2;
+                }        
+            }
+        }
+        else {  // case 2
+            if(R_chi2 < W_chi2) {
+                W = R; W_chi2 = R_chi2;
+            }
+            vec4 C1 = W.midpoint(M); double C1_chi2 = nm_val(C1);
+            vec4 C2 = M.midpoint(R); double C2_chi2 = nm_val(C2);
+            if(C1_chi2 < C2_chi2) { C = C1; C_chi2 = C1_chi2; }
+            else                  { C = C2; C_chi2 = C2_chi2; }
+        
+            if(C_chi2 < W_chi2) {
+                W = C; W_chi2 = C_chi2;
+            }
+            else {
+                S = B.midpoint(W); S_chi2 = nm_val(S);
+                W = S; W_chi2 = S_chi2;
+                G = M; G_chi2 = M_chi2;
+            }
+        }
+        nmvec.at(0) = B; chi2vec.at(0) = B_chi2;
+        nmvec.at(1) = G; chi2vec.at(1) = G_chi2;
+        nmvec.at(4) = W; chi2vec.at(4) = W_chi2;
     
         std::cout << std::endl << "finished iteration # " << iter << "/" << itermax << std::endl << std::endl;
         
