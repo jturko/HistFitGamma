@@ -28,12 +28,12 @@ class vec
 {
 public:
     vec() { 
-        set(0,0,0); 
+        set(0,0,0,0,0); 
     }
     ~vec() {} 
     
-    vec(double e1, double e2, double e3) {
-        set(e1,e2,e3);
+    vec(double e1, double e2, double e3, double e4, double e5) {
+        set(e1,e2,e3,e4,e5);
     }
 
     double at(int i) { 
@@ -46,11 +46,13 @@ public:
 
     int size() { return fVector.size(); }
  
-    void set(double e1, double e2, double e3) {
+    void set(double e1, double e2, double e3, double e4, double e5) {
         fVector.resize(0);
         fVector.push_back(e1); fArray[0] = e1;
         fVector.push_back(e2); fArray[1] = e2;
         fVector.push_back(e3); fArray[2] = e3;
+        fVector.push_back(e4); fArray[3] = e4;
+        fVector.push_back(e5); fArray[4] = e5;
     }
     void set(int i, double val) { 
         if(i<0||i>=int(fVector.size())) { 
@@ -91,7 +93,7 @@ public:
 
 private:
     std::vector<double> fVector;
-    double fArray[3];
+    double fArray[5];
 };
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -107,11 +109,12 @@ public:
         std::cout << "      A = " << fParameters[0] << std::endl;
         std::cout << "      B = " << fParameters[1] << std::endl;
         std::cout << "      C = " << fParameters[2] << std::endl;
+        std::cout << "     a1 = " << fParameters[3] << std::endl;
         std::cout << " offset = " << fParameters[8] << " keVee " << std::endl;
     }
 
     void Sort(double * par);
-    void Sort(double A=0.1, double B=0.05, double C=1e-4, double offset=0.);
+    void Sort(double A=0.1, double B=0.05, double C=1e-4, double a1=1., double offset=0.);
 
     void SetParameters(double * par);
 
@@ -192,13 +195,14 @@ public:
     std::vector<int> * fPtypeVector;
 
     double fProtonCoeff[4];
+    double fElectronCoeff[4];
     double fDeuteronCoeff[4];
     double fCarbonCoeff[4];
     double fAlphaCoeff[4];
     double fBeCoeff[4];
     double fBCoeff[4];
     double fSmearingCoeff[3];
-    double fParameters[9];
+    double fParameters[8];
 
     int fNumEntries;
     TRandom3 fRandom;
@@ -259,27 +263,29 @@ HistFit::HistFit(std::string run_id) :
     fSimTree->SetBranchAddress("eKinVector",&fEkinVector,&fEkinBranch);
     fSimTree->SetBranchAddress("particleTypeVector",&fPtypeVector,&fPtypeBranch);
     
+    fLightOffset = 0.0;
+    
     fProtonCoeff[0] = 0.74; fProtonCoeff[1] = 3.2; fProtonCoeff[2] = 0.20; fProtonCoeff[3] = 0.97;
     fDeuteronCoeff[0] = 0.75; fDeuteronCoeff[1] = 2.80; fDeuteronCoeff[2] = 0.25; fDeuteronCoeff[3] = 0.93;
     fCarbonCoeff[0] = 0.05; fCarbonCoeff[1] = 0.0; fCarbonCoeff[2] = 0.0;fCarbonCoeff[3] = 0.0;
     fAlphaCoeff[0] = 0.14; fAlphaCoeff[1] = 0.59; fAlphaCoeff[2] = 0.065; fAlphaCoeff[3] = 1.01;
     fBeCoeff[0] = 0.0821; fBeCoeff[1] = 0.0; fBeCoeff[2] = 0.0; fBeCoeff[3] = 0.0;
     fBCoeff[0] = 0.0375; fBCoeff[1] = 0.0; fBCoeff[2] = 0.0; fBCoeff[3] = 0.0;
-    
+    fElectronCoeff[0] = 1; fElectronCoeff[1] = 0; fElectronCoeff[2] = 0; fElectronCoeff[3] = 0;    
+
     fSmearingCoeff[0] = 0.4; fSmearingCoeff[1] = 0.07; fSmearingCoeff[2] = 0.008;
 
-    fParameters[0] = 0.1;
-    fParameters[1] = 0.05;
-    fParameters[2] = 1e-4;
-    fParameters[3] = 0.639;
-    fParameters[4] = 1.462;
-    fParameters[5] = 0.373;
-    fParameters[6] = 0.968;
-    fParameters[7] = 0.0;
-    fParameters[8] = 0.0;
+    fParameters[0] = fSmearingCoeff[0];
+    fParameters[1] = fSmearingCoeff[1]; 
+    fParameters[2] = fSmearingCoeff[2];
+    fParameters[3] = fElectronCoeff[0];
+    fParameters[4] = fLightOffset;
+    //fParameters[4] = fElectronCoeff[1];
+    //fParameters[5] = fElectronCoeff[2];
+    //fParameters[6] = fElectronCoeff[3];
+    //fParameters[7] = fLightOffset;
     SetParameters(fParameters);
    
-    fLightOffset = 0.0;
 
     std::cout << "Source: " << title << " - " << fRunId << std::endl;
 
@@ -294,36 +300,34 @@ void HistFit::SetParameters(double * par)
     fSmearingCoeff[0] = par[0];
     fSmearingCoeff[1] = par[1];
     fSmearingCoeff[2] = par[2];
-    fProtonCoeff[0] = par[3];
-    fProtonCoeff[1] = par[4];
-    fProtonCoeff[2] = par[5];
-    fProtonCoeff[3] = par[6];
-    fCarbonCoeff[0] = par[7];
-    fLightOffset = par[8];   
+    fElectronCoeff[0] = par[3];
+    fLightOffset      = par[4];
+    //fElectronCoeff[1] = par[4];
+    //fElectronCoeff[2] = par[5];
+    //fElectronCoeff[3] = par[6];
+    //fLightOffset = par[7];   
  
     fParameters[0] = par[0];
     fParameters[1] = par[1];
     fParameters[2] = par[2];
     fParameters[3] = par[3];
     fParameters[4] = par[4];
-    fParameters[5] = par[5];
-    fParameters[6] = par[6];
-    fParameters[7] = par[7];
-    fParameters[8] = par[8];
+    //fParameters[5] = par[5];
+    //fParameters[6] = par[6];
+    //fParameters[7] = par[7];
 }
 
-void HistFit::Sort(double A, double B, double C, double offset)
+void HistFit::Sort(double A, double B, double C, double a1, double offset)
 {
-    double par[9];
+    double par[8];
     par[0] = A;
     par[1] = B;
     par[2] = C;
-    par[3] = fParameters[3];
-    par[4] = fParameters[4];
+    par[3] = a1;
+    par[4] = offset;
     par[5] = fParameters[5];
     par[6] = fParameters[6];
     par[7] = fParameters[7];
-    par[8] = offset;
     
     Sort(par);
 }
@@ -358,8 +362,10 @@ void HistFit::Sort(double * par)
         for(int j=0; j<nHits; j++)
         {
             if(fPtypeVector->at(j) == 2 || fPtypeVector->at(j) == 3) {
-                centroidEkin = fEkinVector->at(j);
-                centroidEres = fEkinVector->at(j)-fEdepVector->at(j);
+                //centroidEkin = fEkinVector->at(j);
+                //centroidEres = fEkinVector->at(j)-fEdepVector->at(j);
+                centroidEkin = LightOutput(fEkinVector->at(j), fElectronCoeff);
+                centroidEres = LightOutput(fEkinVector->at(j)-fEdepVector->at(j), fElectronCoeff);
             }
             else if(fPtypeVector->at(j) == 4) {
                 centroidEkin = LightOutput(fEkinVector->at(j), fProtonCoeff);
@@ -425,7 +431,7 @@ public:
     Fitter(std::string, std::string, std::string, std::string, std::string, std::string, std::string, std::string);
     
     void Draw();
-    void Run(double A=0.10, double B=0.05, double C=1e-4, double offset = 0);
+    void Run(double A=0.10, double B=0.05, double C=1e-4, double a1=1, double offset = 0);
 
     bool Check(int i) { if(i<=-1||i>=GetNumberOfHistFits()) return false; else return true; }
     
@@ -460,7 +466,7 @@ public:
     
     void Print() { for(int num=0; num<GetNumberOfHistFits(); num++) std::cout << "Run# = " << fRunIdVector.at(num) << std::endl; }
 
-    void SetParameters(double A=0.10, double B=0.05, double C=1e-4, double a1=0.639, double a2=1.462, double a3=0.373, double a4=0.968, double carbon=0,double offset=0) {   
+    void SetParameters(double A=0.10, double B=0.05, double C=1e-4, double a1=1, double a2=0, double a3=0, double a4=0, double carbon=0,double offset=0) {   
         fParameters[0]=A;fParameters[1]=B;fParameters[2]=C;
         fParameters[3]=a1; fParameters[4]=a2; fParameters[5]=a3; fParameters[6]=a4; 
         fParameters[7]=carbon; 
@@ -481,16 +487,16 @@ public:
         std::cout << "      B = " << fParameters[1] << std::endl;
         std::cout << "      C = " << fParameters[2] << std::endl;
         std::cout << "     a1 = " << fParameters[3] << std::endl;
-        std::cout << "     a2 = " << fParameters[4] << std::endl;
-        std::cout << "     a3 = " << fParameters[5] << std::endl;
-        std::cout << "     a4 = " << fParameters[6] << std::endl;
-        std::cout << " carbon = " << fParameters[7] << std::endl;
-        std::cout << " offset = " << fParameters[8] << " keVee" << std::endl;
+        std::cout << " offset = " << fParameters[4] << std::endl;
+        //std::cout << "     a3 = " << fParameters[5] << std::endl;
+        //std::cout << "     a4 = " << fParameters[6] << std::endl;
+        //std::cout << " carbon = " << fParameters[7] << std::endl;
+        //std::cout << " offset = " << fParameters[8] << " keVee" << std::endl;
     }
 
     void InitializeParameters();
 
-    void NelderMead3(double A=0.10, double B=0.05, double C=0.0001, int itermax=50);
+    void NelderMead(double A=0.10, double B=0.05, double C=0.0001, double a1=1, double offset=0, int itermax=50);
 
     std::vector<HistFit> fHistFitVector;   
     std::vector<std::string> fRunIdVector;
@@ -533,12 +539,12 @@ void Fitter::InitializeParameters()
     fParameters[0] = 0.1;
     fParameters[1] = 0.05;
     fParameters[2] = 1e-4;
-    fParameters[3] = 0.639;
-    fParameters[4] = 1.462;
-    fParameters[5] = 0.373;
-    fParameters[6] = 0.968;
-    fParameters[7] = 0.;
-    fParameters[8] = 0;
+    fParameters[3] = 1;
+    fParameters[4] = 0;
+    //fParameters[5] = ;
+    //fParameters[6] = 0.968;
+    //fParameters[7] = 0.;
+    //fParameters[8] = 0;
 
     fSum = 0;
     fSum2 = 0;
@@ -629,17 +635,19 @@ Fitter::Fitter(std::string one, std::string two, std::string three, std::string 
     InitializeParameters();
 }
 
-void Fitter::Run(double A, double B, double C, double offset) 
+void Fitter::Run(double A, double B, double C, double a1, double offset) 
 {
-    double a1 = fParameters[3];
-    double a2 = fParameters[4];
-    double a3 = fParameters[5];
-    double a4 = fParameters[6];
-    double carbon = fParameters[7];
-    offset = fParameters[8];
-    
-    SetParameters(A,B,C,a1,a2,a3,a4,carbon,offset);
+    //fParameters[0] = A;
+    //fParameters[1] = B;
+    //fParameters[2] = C;
+    //fParameters[3] = a1;
+    //fParameters[4] = offset;
+    double par[5] = { A,B,C,a1,offset };    
+
+    //SetParameters(A,B,C,a1,a2,a3,a4,carbon,offset);
+    SetParameters(par);
     PrintParameters();
+    
     if(!fCanvas) {
         fCanvas = new TCanvas();
         if(GetNumberOfHistFits() == 1) fCanvas->Divide(1);
@@ -690,7 +698,7 @@ void Fitter::DrawToFile(std::string input)
 
 }
 
-void Fitter::NelderMead3(double A, double B, double C, int itermax)
+void Fitter::NelderMead(double A, double B, double C, double a1, double offset, int itermax)
 {
     std::cout << "starting Nelder Mead method... " << std::endl;
     std::cout << "!!! only fitting the 3 Gaussian parameters : A, B, C" << std::endl;
@@ -699,18 +707,24 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
     double inc2 = 0.01;   // A
     double inc3 = 0.01;  // B
     double inc4 = 1e-4; // C
+    double inc5 = 0.01;
+    double inc6 = 5;
 
     //    ( A   , B    , C     , a1   , a2  , a3  , a4   , carbon)
-    vec v1(A,B,C);
+    vec v1(A,B,C,a1,offset);
     vec v2(v1); v2.set(0,v2.at(0)+inc2);
     vec v3(v1); v3.set(1,v3.at(1)+inc3);
     vec v4(v1); v4.set(2,v4.at(2)+inc4);
+    vec v5(v1); v5.set(3,v4.at(3)+inc5);
+    vec v6(v1); v6.set(4,v4.at(4)+inc6);
 
     std::vector<vec> nmvec;
     nmvec.push_back(v1);
     nmvec.push_back(v2);
     nmvec.push_back(v3);
     nmvec.push_back(v4);
+    nmvec.push_back(v5);
+    nmvec.push_back(v6);
 
     std::cout << "calculating chi2's for the initial simplex..." << std::endl;
     std::vector<double> chi2vec;
@@ -727,14 +741,14 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
 
         std::vector<vec> temp_par;
         std::vector<double> temp_chi2;
-        temp_par.resize(4);
-        temp_chi2.resize(4);
+        temp_par.resize(6);
+        temp_chi2.resize(6);
 
         // reordering...
         double test = 1e100;
         int val = 0;
-        for(int i=0; i<4; i++) {
-            for(int j=0; j<4; j++) {
+        for(int i=0; i<6; i++) {
+            for(int j=0; j<6; j++) {
                 if(chi2vec.at(j) < test) {
                     test = chi2vec.at(j);
                     temp_chi2.at(i) = test;
@@ -749,17 +763,17 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
         chi2vec = temp_chi2;
 
         std::cout << "printing the reordered variables..." << std::endl;
-        for(int i=0; i<4; i++) {
+        for(int i=0; i<6; i++) {
             std::cout << " chi2 = " << chi2vec.at(i);
             std::cout << " pars = ";
-            for(int j=0; j<2; j++) std::cout << nmvec.at(i).at(j) << " , "; std::cout << nmvec.at(i).at(2);
+            for(int j=0; j<4; j++) std::cout << nmvec.at(i).at(j) << " , "; std::cout << nmvec.at(i).at(4);
             std::cout << std::endl;
         }
         
     
         vec B(nmvec.at(0)); double B_chi2 = chi2vec.at(0);
         vec G(nmvec.at(1)); double G_chi2 = chi2vec.at(1);
-        vec W(nmvec.at(3)); double W_chi2 = chi2vec.at(3);
+        vec W(nmvec.at(5)); double W_chi2 = chi2vec.at(5);
         vec M = B.midpoint(G); double M_chi2 = nm_val(M);
         vec R = M.scalar_multiply(2.); R.subtract(W); double R_chi2 = nm_val(R);
         vec E = R.scalar_multiply(2.); E.subtract(M); double E_chi2 = 0;
@@ -801,7 +815,7 @@ void Fitter::NelderMead3(double A, double B, double C, int itermax)
         }
         nmvec.at(0) = B; chi2vec.at(0) = B_chi2;
         nmvec.at(1) = G; chi2vec.at(1) = G_chi2;
-        nmvec.at(3) = W; chi2vec.at(3) = W_chi2;
+        nmvec.at(5) = W; chi2vec.at(5) = W_chi2;
     
         std::cout << std::endl << "finished iteration # " << iter << "/" << itermax << std::endl << std::endl;
         
