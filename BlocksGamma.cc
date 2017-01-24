@@ -238,7 +238,6 @@ HistFit::HistFit(std::string run_id) :
     else if(run_id=="0_0"||run_id=="1_0"||run_id=="3_0") { fCutoffHigh = 700; fCutoffLow = 70; title="137Cs";} 
     else if(run_id=="0_1"||run_id=="1_1"||run_id=="2_0"||run_id=="1_2"||run_id=="2_1") { fCutoffHigh = 80.; fCutoffLow = 3.; title="241Am";} 
     else{ std::cout << "not a valid run id, this is a garbage object!!!" << std::endl; return; }
-    fCutoffLow = 200.; 
 
     fExpFile = TFile::Open("~/data/hists2012.root"); 
 
@@ -264,6 +263,7 @@ HistFit::HistFit(std::string run_id) :
     fSimTree->SetBranchAddress("particleTypeVector",&fPtypeVector,&fPtypeBranch);
     
     fLightOffset = 0.0;
+    //fCutoffLow = 300.; 
     
     fProtonCoeff[0] = 0.74; fProtonCoeff[1] = 3.2; fProtonCoeff[2] = 0.20; fProtonCoeff[3] = 0.97;
     fDeuteronCoeff[0] = 0.75; fDeuteronCoeff[1] = 2.80; fDeuteronCoeff[2] = 0.25; fDeuteronCoeff[3] = 0.93;
@@ -704,11 +704,11 @@ void Fitter::NelderMead(double A, double B, double C, double a1, double offset, 
     std::cout << "!!! only fitting the 3 Gaussian parameters : A, B, C" << std::endl;
     
     
-    double inc2 = 0.01;   // A
-    double inc3 = 0.01;  // B
-    double inc4 = 1e-4; // C
-    double inc5 = 0.01;
-    double inc6 = 5;
+    double inc2 = 0.1;   // A
+    double inc3 = 0.1;  // B
+    double inc4 = 5e-4; // C
+    double inc5 = 0.1;
+    double inc6 = 100;
 
     //    ( A   , B    , C     , a1   , a2  , a3  , a4   , carbon)
     vec v1(A,B,C,a1,offset);
